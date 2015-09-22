@@ -1,0 +1,6 @@
+hi this is ram
+hi i am a boy
+hello there
+how are you
+1
+ls
