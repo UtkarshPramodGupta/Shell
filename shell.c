@@ -18,7 +18,7 @@
 #include "shell.h"
 
 process* first_process = NULL; //pointer to the first process that is launched */
-process* last_process = NULL; //pointer to the first process that is launched */
+process* last_process = NULL; //pointer to the last process that is launched */
 
 
 int cmd_help(tok_t arg[]);
@@ -26,8 +26,10 @@ int cmd_quit(tok_t arg[]);
 int cmd_cd(tok_t arg[]);
 
 
-/* Command Lookup table */
-typedef int cmd_fun_t (tok_t args[]); /* cmd functions take token array and return int */
+/* define type for cmd handlers */
+typedef int cmd_fun_t (tok_t args[]); 
+
+/* cmd functions take token array and return int */
 typedef struct fun_desc {
   cmd_fun_t *fun;
   char *cmd;
@@ -55,7 +57,11 @@ int cmd_quit(tok_t arg[]) {
 }
 
 int cmd_cd(tok_t arg[]) {
-	return chdir(arg[0]);
+  if(chdir(arg[1]<0)) {
+    printf("Not a valid path\n");
+    return -1;
+  }
+  return 0;
 }
 
 int lookup(char cmd[]) {
@@ -96,7 +102,7 @@ void init_shell()
 }
 
 /**
- * Add a process to our process list
+ * Add a process to the process list
  */
 void add_process(process* p)
 {
@@ -177,14 +183,16 @@ int shell (int argc, char *argv[]) {
   printf("%s running as PID %d under %d\n",argv[0],pid,ppid);
 
   lineNum=0;
-  cwd = getcwd(NULL, 50);
+  cwd = getcwd(NULL, 0);
 
-  fprintf(stdout, "%d:%s: ", lineNum, cwd);
+  fprintf(stdout, "%d:%s $  ", lineNum, cwd);
+
+  free(cwd);
 
   while ((s = freadln(stdin))){
     t = getToks(s); /* break the line into tokens */
     fundex = lookup(t[0]); /* Is first token a shell literal */
-    if(fundex >= 0) cmd_table[fundex].fun(&t[1]);
+    if(fundex >= 0) cmd_table[fundex].fun(t);
     else 
     {
 	   	proc = create_process(t);
@@ -192,8 +200,9 @@ int shell (int argc, char *argv[]) {
 		stat = proc->status;
     }
 
-    cwd = getcwd(NULL, 50);
-    fprintf(stdout, "%d:%d:%s: ", lineNum, stat, cwd);
+    cwd = getcwd(NULL, 0);
+    fprintf(stdout, "%d:%d:%s $ ", lineNum, stat, cwd);
+    free(cwd);
   }
   return 0;
 }
